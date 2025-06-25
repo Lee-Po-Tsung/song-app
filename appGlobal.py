@@ -1,0 +1,29 @@
+from sys import modules
+from os.path import abspath, dirname, join
+
+MAINFILE = abspath(modules['__main__'].__file__)
+
+if MAINFILE == join(dirname(__file__), 'streamlit_app.py'):
+    from myLib.JPSZip_api import ZipHandler
+    from myLib.sheet import Sheet
+
+    JPS = ZipHandler("data/songs")
+    SONGLIST = Sheet("data/songlist.csv")
+elif MAINFILE == join(dirname(__file__), 'allM.py') or MAINFILE == join(dirname(__file__), 'popM.py'):
+    from myLib.sheet import Sheet
+
+    SONGLIST = Sheet("data/songlist.csv")
+
+PAGESIZE = 50
+
+YTURL = "https://www.youtube.com/watch?v={}".format
+
+YTIMG_MAX = "https://i.ytimg.com/vi/{}/maxresdefault.jpg".format
+
+YTIMG_HQ = "https://i.ytimg.com/vi/{}/hqdefault.jpg".format
+
+YTIMG_MQ = "https://i.ytimg.com/vi/{}/mqdefault.jpg".format
+
+YTIMG_SD = "https://i.ytimg.com/vi/{}/sddefault.jpg".format
+
+YTIMG = "https://i.ytimg.com/vi/{}/default.jpg".format
