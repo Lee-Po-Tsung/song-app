@@ -1,7 +1,7 @@
 import streamlit as st
 from appGlobal import SONGLIST, SONG, YTIMG, YTURL
 from pandas import concat
-import orjson
+import json
 import random
 from streamlit.components.v1 import html
 
@@ -64,7 +64,7 @@ def showSong(song):
         page_title=song.songName,
         page_icon='🎧',
         )
-    jps = orjson.loads(SONG.get_file_data(f"JPS-{song.songID}"))
+    jps = json.loads(SONG.get_file_data(f"JPS-{song.songID}"))
     st.video(YTURL(song.ytID))
     st.divider()
     if title := jps.get('title', None):
