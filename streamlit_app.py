@@ -1,9 +1,13 @@
 import streamlit as st
-from appGlobal import SONGLIST, SONG, YTIMG, YTURL
-from pandas import concat
+from appGlobal import SONGLIST, SONG, YTIMG, YTURL, Sheet
+from pandas import concat, DataFrame
 import json
 import random
 from streamlit.components.v1 import html
+from myComponent import table
+from math import ceil
+
+# pages
 
 @st.fragment
 def hello():
@@ -11,59 +15,112 @@ def hello():
 
 @st.fragment
 def randomSong():
-    st.session_state.songID = random.randrange(len(SONGLIST))
+    st.session_state.songID = random.randrange(1, len(SONGLIST))
     st.switch_page(PAGES["SONGPAGE"])
 
 @st.fragment
 def popList():
-    pd = SONGLIST.popSonglist(10)
+    df = SONGLIST.popSonglist(10)
     st.header("熱門音樂", divider=True)
-    st.table(concat([pd["ytID"].apply(lambda id: f"![該影片已不在YT]({YTIMG(id)})").rename("縮圖"), pd['songName'].rename("歌名"), pd['view'].rename("瀏覽次數")], axis=1))
+    showSongList(df)
+
+def allList():
+    st.header("全部音樂", divider=True)
+    pagedList(SONGLIST)
 
 @st.fragment
-def allList():
-    pd = SONGLIST.songlist(st.session_state.currentPage, 10)
-    st.header("全部音樂", divider=True)
-    st.table(concat([pd["ytID"].apply(lambda id: f"![該影片已不在YT]({YTIMG(id)})").rename("縮圖"), pd['songName'].rename("歌名"), pd['view'].rename("瀏覽次數")], axis=1))
-
-    MaxPage = len(SONGLIST) // 10 + 1
-
-    def changePage():
-        st.session_state.update({"currentPage": st.session_state.get("page_selector", 1)})
-
-    cols = st.columns(3, vertical_alignment='bottom', gap="large")
-    if cols[0].button("上一頁", disabled=st.session_state.currentPage <= 1, use_container_width=True):
-        st.session_state.currentPage -= 1
-
-    cols[1].selectbox(label="頁碼",
-                      label_visibility="collapsed", 
-                      options=range(1, MaxPage),
-                      index=st.session_state.currentPage - 1,
-                      width=100, key="page_selector", on_change=changePage, format_func=lambda x: f"{x}")
-    
-    if cols[2].button("下一頁", disabled=st.session_state.currentPage >= MaxPage, use_container_width=True):
-        st.session_state.currentPage += 1    
-
 def searchPage():
-    ...
+    def inputChange():
+        if st.query_params.get("page", None):
+            st.query_params.update({"page": 1})
+            
+    if value := st.text_input("歌名搜尋", on_change=inputChange):
+        tmp = SONGLIST.TF(SONGLIST._df["songName"].str.contains(value))
+        if len(tmp):
+            pagedList(tmp)
+        else:
+            st.write("無結果")
 
 def settingPage():
     ...
 
 @st.fragment
 def songPage():
-    songID = st.session_state.get("songID", -1)
+    songID = -1
+
+    try:
+        if songID := st.query_params.get("ID", None):
+            songID = int(songID)
+        else:
+            songID = st.session_state.pop("songID")
+    except:
+        st.switch_page(PAGES["HOMEPAGE"])
+        return
+    
     if songID == -1:
         st.switch_page(PAGES["HOMEPAGE"])
     else:
         song = SONGLIST.getSong_from_id(songID)
         showSong(song)
 
+# function
+
+@st.fragment
+def pagedList(sheet: Sheet):
+    curpage = st.query_params.get("page", "1")
+    MaxPage = ceil(len(sheet) / 10)
+
+    if not curpage.isdecimal():
+        st.error("你在幹什麼?")
+        return
+    
+    curpage = int(curpage)
+
+    if curpage > MaxPage or curpage < 1:
+        st.error("你在幹什麼?")
+        return
+    
+    df = sheet.songlist(curpage, 10)
+    showSongList(df)
+
+    def prevPage():
+        if curpage > 1:
+            st.query_params.update({"page": curpage - 1})
+
+    def nextPage():
+        if curpage < MaxPage:
+            st.query_params.update({"page": curpage + 1})
+
+    def changePage():
+        st.query_params.update({"page": st.session_state.get("page_selector", 1)})
+
+    cols = st.columns(3, vertical_alignment='bottom', gap="large")
+    cols[0].button("上一頁", disabled=curpage <= 1, use_container_width=True, on_click=prevPage)
+        
+    cols[1].selectbox(label="頁碼",
+                      label_visibility="collapsed", 
+                      options=range(1, MaxPage + 1),
+                      index=curpage - 1,
+                      width=100, key="page_selector", on_change=changePage, format_func=lambda x: f"{x}")
+    
+    cols[2].button("下一頁", disabled=curpage >= MaxPage, use_container_width=True, on_click=nextPage)
+
+def showSongList(df: DataFrame):
+    index = table(concat([df["ytID"].apply(lambda x: YTIMG(x)).rename("縮圖"), df['songName'].rename("歌名"), df['view'].rename("瀏覽次數")], axis=1),
+          tagNames=["img", "p", "p"], 
+          attrs=["src", "innerText", "innerText"])
+    
+    if index != -1:
+        st.session_state.songID = df.iloc[index].songID
+        st.switch_page(PAGES["SONGPAGE"])
+
 def showSong(song):
     st.set_page_config(
         page_title=song.songName,
         page_icon='🎧',
         )
+    st.query_params.update({"ID": song.songID})
+
     jps = json.loads(SONG.get_file_data(f"JPS-{song.songID}"))
     st.video(YTURL(song.ytID))
     st.divider()
@@ -71,6 +128,7 @@ def showSong(song):
         st.html(f"{title}")
     else:
         st.error("發生錯誤")
+
     @st.fragment
     def func():
         select = []
@@ -85,7 +143,7 @@ def showSong(song):
     func()
     st.divider()
 
-st.session_state.currentPage = 1
+# main
 
 PAGES = {
     "HOMEPAGE": st.Page(hello, title='首頁', icon=':material/house:', default=True),

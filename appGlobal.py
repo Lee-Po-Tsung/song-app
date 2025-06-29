@@ -1,16 +1,15 @@
-from sys import modules
-from os.path import abspath, dirname, join
+# from sys import modules
+# from os.path import abspath, dirname, join
 
-MAINFILE = abspath(modules['__main__'].__file__)
+# MAINFILE = abspath(modules['__main__'].__file__)
 
-if MAINFILE == join(dirname(__file__), 'streamlit_app.py'):
+# if MAINFILE == join(dirname(__file__), 'streamlit_app.py'):
+if True:
     from myLib.JPSZip_api import ZipHandler
     from myLib.sheet import Sheet
 
     SONG = ZipHandler("data/SONG")
     SONGLIST = Sheet("data/songlist.csv")
-
-PAGESIZE = 50
 
 YTURL = "https://www.youtube.com/watch?v={}".format
 

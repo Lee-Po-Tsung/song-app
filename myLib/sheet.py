@@ -1,6 +1,8 @@
 import pandas as pd
 from typing import overload
 import ast
+from io import StringIO
+from math import ceil
 
 class Sheet:
     def __init__(self, csv_path):
@@ -62,10 +64,18 @@ class Sheet:
             raise ValueError("???")
         total_rows = len(self._df)
         if (page - 1) * size > total_rows:
-            raise ValueError(f"page number > {(total_rows // size) + 1}")
-        elif page * size > total_rows:
-            return self.getdata((page - 1) * size, total_rows)
+            raise ValueError(f"page number > {ceil(total_rows / size)}")
         return self.getdata((page - 1) * size, page * size)
+    
+    def filter(self, items:list[str]):
+        new = Sheet(StringIO())
+        new._df = self._df.filter(items=items)
+        return new
+    
+    def TF(self, series: pd.Series):
+        new = Sheet(StringIO())
+        new._df = self._df[series]
+        return new
 
     def __len__(self):
         """獲取總行數"""

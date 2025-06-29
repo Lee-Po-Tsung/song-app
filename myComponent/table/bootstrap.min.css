@@ -1,0 +1,33 @@
+table.myComponent {
+  text-align: center;
+  border-collapse: collapse;
+  border-radius: 10px;
+}
+
+table.myComponent > thead {
+  height: 60px;
+}
+
+table.myComponent > thead  p {
+  color: #fafafa99;
+}
+
+table.myComponent > tbody  p {
+  color: var(--text-color);
+}
+
+table.myComponent > thead > tr > th {
+  border: 1px, solid, gray;
+}
+
+table.myComponent > tbody > tr > * {
+  border: 1px, solid, gray;
+}
+
+table.myComponent tr > th, td {
+  width: 33vw;
+}
+
+table.myComponent > tbody > tr {
+  cursor: pointer;
+}
